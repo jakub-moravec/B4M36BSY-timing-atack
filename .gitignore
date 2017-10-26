@@ -11,7 +11,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 *.zip
@@ -20,3 +19,27 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+.DS_Store
+.idea/
+keyczar.iml
+src/.DS_Store
+src/cz/.DS_Store
+src/cz/cvut/.DS_Store
+src/cz/cvut/keyczar/.DS_Store
+src/cz/cvut/keyczar/.svn/
+src/cz/cvut/keyczar/annotations/.svn/
+src/cz/cvut/keyczar/enums/.svn/
+src/cz/cvut/keyczar/exceptions/.svn/
+src/cz/cvut/keyczar/experimental/.svn/
+src/cz/cvut/keyczar/i18n/.svn/
+src/cz/cvut/keyczar/interfaces/.svn/
+src/cz/cvut/keyczar/jce/.svn/
+src/cz/cvut/keyczar/util/.svn/
+tests/.DS_Store
+tests/cz/.DS_Store
+tests/cz/cvut/.DS_Store
+tests/cz/cvut/keyczar/.DS_Store
+tests/cz/cvut/keyczar/.svn/
+tests/cz/cvut/keyczar/experimental/.svn/
+testsig
+timingattack.iml
