@@ -23,7 +23,7 @@ public class Attack {
 
     private static final int NUMBER_OF_TRIES = 50;
 
-    private static final String DIFFICULTY = "HARDEST";
+    private static final String DIFFICULTY = "HARD";
 
     private static Verifier verifier;
     private static byte[] message;
@@ -46,11 +46,14 @@ public class Attack {
         for (int i = 0; i < SIGNATURE_LENGTH; i++) {
             findByte(i);
 
-            // todo if avg result time to low then i--
-            if (i > 0) {
+            // fallback if we made bad guess
+            // if avg result time too low then redo last iteration
+            // shifted by 2 so we skip first 2 iterations
+            if (i>2) {
                 long durationDelta = avgByteDurations[i] - avgByteDurations[i - 1];
-                if(durationDelta < getAverageDelta(avgByteDurations) / 2) {
-                    i--;
+                long avgDelta = getAverageDeltaInInterval(Math.max(0, i - 4), Math.max(0, i - 2), avgByteDurations);
+                if (durationDelta < avgDelta / 2) { // we expect the delta of times will decrease, that is why we take avg / 2 as threshold
+                    i -= 2; // we have to return to pre-previous iteration since it is the one, where the error is
                 }
             }
         }
@@ -83,22 +86,23 @@ public class Attack {
     /**
      * Counts average delta between items i and i + 1. Zero values are not counted.
      * @param values input values
+     * @param start start of interval of counted values
      * @return average delta
      */
-    private static long getAverageDelta(long[] values) {
+    private static long getAverageDeltaInInterval(int start, int end, long[] values) {
         int itemsCounted = 0;
-        long acumulator = 0;
+        long accumulator = 0;
 
-        for (long value : values) {
-            if (value > 0) {
-                acumulator += value;
+        for (int i = end - 1; i >= start; i++) {
+            if (values[i+1] > 0) {
+                accumulator += values[i+1] - values[i];
                 itemsCounted++;
             } else {
                 break;
             }
         }
 
-        return Math.round(acumulator / (double) itemsCounted);
+        return Math.round(accumulator / (double) itemsCounted);
     }
 
 
