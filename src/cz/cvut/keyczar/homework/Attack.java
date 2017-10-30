@@ -29,6 +29,7 @@ public class Attack {
     private static byte[] message;
     private static long[] avgByteDurations;
     private static byte[] signature;
+    private static int[] findByteTries;
 
     public static void main(String[] args) throws KeyczarException {
 
@@ -41,6 +42,7 @@ public class Attack {
 
         avgByteDurations = new long[SIGNATURE_LENGTH];
         signature = new byte[SIGNATURE_LENGTH];
+        findByteTries = new int[SIGNATURE_LENGTH];
         Arrays.fill(signature, Byte.MIN_VALUE);
 
         for (int i = 0; i < SIGNATURE_LENGTH; i++) {
@@ -56,6 +58,15 @@ public class Attack {
                     i -= 2; // we have to return to pre-previous iteration since it is the one, where the error is
                 }
             }
+
+            System.out.print("Byte " + i + " - output [");
+            for (int j = 0; j <= i; j++) {
+                System.out.print(signature[j]);
+                if (j < i) {
+                    System.out.print(", ");
+                }
+            }
+            System.out.println("]");
         }
 
         System.out.println(verifier.verify(message, addPrefix(signature)));
@@ -117,6 +128,7 @@ public class Attack {
         ByteBuffer messageBuffer = ByteBuffer.wrap(message);
         ByteBuffer signatureBuffer;
         avgByteDurations[byteIndex] = 0;
+        findByteTries[byteIndex]++;
 
         for (int i = 0; i < 256; i++) {
             signature[byteIndex] = (byte) (i - Math.abs((int) Byte.MIN_VALUE));
@@ -143,7 +155,7 @@ public class Attack {
                 maxDurationValue = signature[byteIndex];
             }
 
-            System.out.printf("Byte %d - input %d - duration %d .\n", byteIndex, (int) signature[byteIndex], actualDuration);
+            System.out.printf("Byte %d - try %d - input (%d) - duration %d .\n", byteIndex, findByteTries[byteIndex], (int) signature[byteIndex], actualDuration);
         }
 
         avgByteDurations[byteIndex] = Math.round(avgByteDurations[byteIndex] / 256d);
