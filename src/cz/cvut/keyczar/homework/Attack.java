@@ -59,6 +59,11 @@ public class Attack {
                 }
             }
 
+            // iff only last byte is wrong, redo only last iteration
+            if (i == SIGNATURE_LENGTH - 1 && !verifier.verify(message, addPrefix(signature))) {
+                i--;
+            }
+
             System.out.print("Byte " + i + " - output [");
             for (int j = 0; j <= i; j++) {
                 System.out.print(signature[j]);
@@ -104,9 +109,10 @@ public class Attack {
         int itemsCounted = 0;
         long accumulator = 0;
 
-        for (int i = end - 1; i >= start; i++) {
-            if (values[i+1] > 0) {
-                accumulator += values[i+1] - values[i];
+        for (int i = start; i < end; i++) {
+            int j = i + 1;
+            if (j < SIGNATURE_LENGTH && values[j] > 0) {
+                accumulator += values[j] - values[i];
                 itemsCounted++;
             } else {
                 break;
