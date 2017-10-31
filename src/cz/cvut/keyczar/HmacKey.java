@@ -159,13 +159,16 @@ class HmacKey extends KeyczarKey {
             if (macResult.length != sigBytes.length) {
                 return false;
             }
+
+            // changes here
+            boolean verified = true;
             for (int pos = 0; pos < macResult.length; pos++) {
                 if (macResult[pos] != sigBytes[pos]) {
-                    return false;
+                    verified = false;
                 }
                 LockSupport.parkNanos(sleepNanos);
             }
-            return true;
+            return verified;
         }
     }
 }
