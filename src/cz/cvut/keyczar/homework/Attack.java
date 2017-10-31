@@ -66,7 +66,7 @@ public class Attack {
             if (i>2) {
                 long durationDelta = avgByteDurations[i] - avgByteDurations[i - 1];
                 long avgDelta = getAverageDeltaInInterval(Math.max(0, i - 4), Math.max(0, i - 2), avgByteDurations);
-                if (durationDelta < avgDelta / 2) { // we expect the delta of times will decrease, that is why we take avg / 2 as threshold
+                if (durationDelta < avgDelta / 4) { // we expect the delta of times will decrease, that is why we take avg / 4 as threshold
                     i -= 2; // we have to return to pre-previous iteration since it is the one, where the error is
                 }
             }
@@ -216,7 +216,7 @@ public class Attack {
     }
 
     /**
-     * Java byte values are -127 to 126, but we want to stare them in simple array.
+     * Java byte values are -128 to 127, but we want to stare them in simple array.
      * This metod transfers array index to value.
      * @param byteIndex array index
      * @return byte value
@@ -226,7 +226,7 @@ public class Attack {
     }
 
     /**
-     * Java byte values are -127 to 126, but we want to stare them in simple array.
+     * Java byte values are -128 to 127, but we want to stare them in simple array.
      * This metod transfers value to array index.
      * @param byteValue byteValue
      * @return array index
