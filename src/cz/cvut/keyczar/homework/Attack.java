@@ -12,7 +12,10 @@ import java.util.Random;
 /**
  * Own implementation of timing attack.
  *
- * TODO
+ * !Implemented and tested on Windows! Behaviour on other platform is not know.
+ *
+ * The signature is guessed byte by byte. If it seems that wrong value was taken (the verification time does not
+ * increase) then the it is re-guessed.
  *
  * @author moravja8
  */
@@ -25,7 +28,7 @@ public class Attack {
 
     private static final int NUMBER_OF_TRIES = 50;
 
-    private static final String DIFFICULTY = "HARD";
+    private static final String DIFFICULTY = "";
 
     private static Verifier verifier;
     private static byte[] message;
@@ -39,7 +42,7 @@ public class Attack {
         verifier = new Verifier("./keys");
         message = "Hello world".getBytes();
 
-        System.setProperty("DIFFICULTY", DIFFICULTY);
+        System.setProperty("difficulty", DIFFICULTY);
 
         warmUp(250000);
 
@@ -58,7 +61,7 @@ public class Attack {
             findByte(i);
 
             // fallback if we made bad guess
-            // if avg result time too low then redo last iteration
+            // iff avg result time too low then redo last iteration
             // shifted by 2 so we skip first 2 iterations
             if (i>2) {
                 long durationDelta = avgByteDurations[i] - avgByteDurations[i - 1];
@@ -133,9 +136,18 @@ public class Attack {
 
 
     /**
-     * TODO
+     * Tries to find a correct value for the byte with given index.
+     *
+     * All possibilities are tested n-times. In each iteration, possibilities are shuffled
+     * so that the impact of runtime optimization is eliminated. From results of n iterations
+     * for each possible value is taken median, which is the comparison value.
+     *
+     * After all this happens, the the value which caused slowest verification is taken as the correct one.
+     *
+     * The correct byte is seted to signature.
+     *
      * @param byteIndex index of byte that should be guessed
-     * @throws KeyczarException ops
+     * @throws KeyczarException something went terribly wrong
      */
     private static void findByte(int byteIndex) throws KeyczarException {
         byte maxDurationValue = 0;
@@ -175,10 +187,10 @@ public class Attack {
 
             if(actualDuration > maxDuration) {
                 maxDuration = actualDuration;
-                maxDurationValue = signature[byteIndex];
+                maxDurationValue = byteIndexToValue(i);
             }
 
-            System.out.printf("Byte %d - try %d - input (%d) - duration %d .\n", byteIndex, findByteTries[byteIndex], (int) signature[byteIndex], actualDuration);
+            System.out.printf("Byte %d - try %d - input (%d) - duration %d .\n", byteIndex, findByteTries[byteIndex], byteIndexToValue(i), actualDuration);
         }
 
         avgByteDurations[byteIndex] = Math.round(avgByteDurations[byteIndex] / 256d);
