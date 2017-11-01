@@ -28,7 +28,7 @@ public class Attack {
 
     private static final int NUMBER_OF_TRIES = 50;
 
-    private static final String DIFFICULTY = "";
+    private static final String DIFFICULTY = "HARD";
 
     private static Verifier verifier;
     private static byte[] message;
@@ -39,10 +39,12 @@ public class Attack {
 
     public static void main(String[] args) throws KeyczarException {
 
-        verifier = new Verifier("./keys");
-        message = "Hello world".getBytes();
+
 
         System.setProperty("difficulty", DIFFICULTY);
+
+        verifier = new Verifier("./keys");
+        message = "Hello world".getBytes();
 
         warmUp(250000);
 
